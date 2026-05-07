@@ -1,0 +1,13 @@
+services:
+  jellyfin:
+    build: .
+    container_name: jellytube-dev
+    ports:
+      - 8096:8096/tcp
+      - 7359:7359/udp
+    volumes:
+      - ./docker-data/config:/config
+      - ./docker-data/cache:/cache
+      - ./docker-data/media:/media
+      - ./Jellyfin.Plugin.JellyTube/bin/Debug/net9.0/publish/:/config/plugins/JellyTube
+    restart: 'unless-stopped'

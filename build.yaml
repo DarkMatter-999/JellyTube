@@ -1,0 +1,16 @@
+---
+name: "JellyTube"
+guid: "1222bde2-5440-4325-846f-b1908f65ba52"
+version: "1.0.0.0"
+targetAbi: "10.9.0.0"
+framework: "net9.0"
+overview: "Short description about your plugin"
+description: >
+  This is a longer description that can span more than one
+  line and include details about your plugin.
+category: "General"
+owner: "DarkMatter-999"
+artifacts:
+- "Jellyfin.Plugin.Template.dll"
+changelog: >
+  changelog
