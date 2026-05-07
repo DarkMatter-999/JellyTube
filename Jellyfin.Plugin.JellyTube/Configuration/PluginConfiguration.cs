@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.JellyTube.Configuration;
@@ -28,30 +30,24 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public PluginConfiguration()
     {
-        // set default options here
-        Options = SomeOptions.AnotherOption;
-        TrueFalseSetting = true;
-        AnInteger = 2;
-        AString = "string";
+        YtDlpPath = "yt-dlp";
+        VideoFormat = "res:1080,ext:mp4:m4a";
+        SourceUrls = new Collection<string>();
     }
 
     /// <summary>
-    /// Gets or sets a value indicating whether some true or false setting is enabled..
+    /// Gets or sets the path to the yt-dlp executable.
     /// </summary>
-    public bool TrueFalseSetting { get; set; }
+    public string YtDlpPath { get; set; }
 
     /// <summary>
-    /// Gets or sets an integer setting.
+    /// Gets or sets the collection of YouTube source URLs (channels, playlists, videos).
     /// </summary>
-    public int AnInteger { get; set; }
+    [SuppressMessage("Design", "CA2227:Collection properties should be read only", Justification = "Jellyfin XML serialization requires a setter")]
+    public Collection<string> SourceUrls { get; set; }
 
     /// <summary>
-    /// Gets or sets a string setting.
+    /// Gets or sets the preferred video format for yt-dlp.
     /// </summary>
-    public string AString { get; set; }
-
-    /// <summary>
-    /// Gets or sets an enum option.
-    /// </summary>
-    public SomeOptions Options { get; set; }
+    public string VideoFormat { get; set; }
 }

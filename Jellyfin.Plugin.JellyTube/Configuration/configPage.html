@@ -5,33 +5,28 @@
     <title>JellyTube</title>
 </head>
 <body>
-    <div id="TemplateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+    <div id="JellyTubeConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
         <div data-role="content">
             <div class="content-primary">
-                <form id="TemplateConfigForm">
-                    <div class="selectContainer">
-                        <label class="selectLabel" for="Options">Several Options</label>
-                        <select is="emby-select" id="Options" name="Options" class="emby-select-withcolor emby-select">
-                            <option id="optOneOption" value="OneOption">One Option</option>
-                            <option id="optAnotherOption" value="AnotherOption">Another Option</option>
-                        </select>
-                    </div>
+                <form id="JellyTubeConfigForm">
                     <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="AnInteger">An Integer</label>
-                        <input id="AnInteger" name="AnInteger" type="number" is="emby-input" min="0" />
-                        <div class="fieldDescription">A Description</div>
+                        <label class="inputLabel inputLabelUnfocused" for="YtDlpPath">yt-dlp Executable Path</label>
+                        <input id="YtDlpPath" name="YtDlpPath" type="text" is="emby-input" required />
+                        <div class="fieldDescription">The path to the yt-dlp executable. Defaults to "yt-dlp" if in PATH.</div>
                     </div>
-                    <div class="checkboxContainer checkboxContainer-withDescription">
-                        <label class="emby-checkbox-label">
-                            <input id="TrueFalseSetting" name="TrueFalseCheckBox" type="checkbox" is="emby-checkbox" />
-                            <span>A Checkbox</span>
-                        </label>
-                    </div>
+
                     <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused" for="AString">A String</label>
-                        <input id="AString" name="AString" type="text" is="emby-input" />
-                        <div class="fieldDescription">Another Description</div>
+                        <label class="inputLabel inputLabelUnfocused" for="SourceUrls">Source URLs (One per line)</label>
+                        <textarea id="SourceUrls" name="SourceUrls" class="emby-input" rows="10"></textarea>
+                        <div class="fieldDescription">List of YouTube Channel, Playlist, or Video URLs to add as virtual libraries.</div>
                     </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="VideoFormat">Preferred Video Format</label>
+                        <input id="VideoFormat" name="VideoFormat" type="text" is="emby-input" required />
+                        <div class="fieldDescription">yt-dlp format string (e.g. bestvideo[height<=1080]+bestaudio/best for 1080p, or bestvideo+bestaudio/best for 4K).</div>
+                    </div>
+
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Save</span>
@@ -41,31 +36,31 @@
             </div>
         </div>
         <script type="text/javascript">
-            var TemplateConfig = {
-                pluginUniqueId: '1222bde2-5440-4325-846f-b1908f65ba52'
+            var JellyTubeConfig = {
+                pluginUniqueId: '1221bde2-5440-4325-846f-b1908f65ba52'
             };
 
-            document.querySelector('#TemplateConfigPage')
+            document.querySelector('#JellyTubeConfigPage')
                 .addEventListener('pageshow', function() {
                     Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
-                        document.querySelector('#Options').value = config.Options;
-                        document.querySelector('#AnInteger').value = config.AnInteger;
-                        document.querySelector('#TrueFalseSetting').checked = config.TrueFalseSetting;
-                        document.querySelector('#AString').value = config.AString;
+                    ApiClient.getPluginConfiguration(JellyTubeConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#YtDlpPath').value = config.YtDlpPath || 'yt-dlp';
+                        document.querySelector('#SourceUrls').value = (config.SourceUrls || []).join('\n');
+                        document.querySelector('#VideoFormat').value = config.VideoFormat || 'bres:1080,ext:mp4:m4a';
                         Dashboard.hideLoadingMsg();
                     });
                 });
 
-            document.querySelector('#TemplateConfigForm')
+            document.querySelector('#JellyTubeConfigForm')
                 .addEventListener('submit', function(e) {
                 Dashboard.showLoadingMsg();
-                ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
-                    config.Options = document.querySelector('#Options').value;
-                    config.AnInteger = document.querySelector('#AnInteger').value;
-                    config.TrueFalseSetting = document.querySelector('#TrueFalseSetting').checked;
-                    config.AString = document.querySelector('#AString').value;
-                    ApiClient.updatePluginConfiguration(TemplateConfig.pluginUniqueId, config).then(function (result) {
+                ApiClient.getPluginConfiguration(JellyTubeConfig.pluginUniqueId).then(function (config) {
+                    config.YtDlpPath = document.querySelector('#YtDlpPath').value;
+                    config.VideoFormat = document.querySelector('#VideoFormat').value;
+                    var urlsRaw = document.querySelector('#SourceUrls').value;
+                    config.SourceUrls = urlsRaw.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+
+                    ApiClient.updatePluginConfiguration(JellyTubeConfig.pluginUniqueId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                     });
                 });
