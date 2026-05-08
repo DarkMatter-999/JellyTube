@@ -24,6 +24,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         : base(applicationPaths, xmlSerializer)
     {
         Instance = this;
+        ApplicationPaths = applicationPaths;
         DbContext = new SqliteDbContext(applicationPaths);
     }
 
@@ -37,6 +38,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// Gets the current plugin instance.
     /// </summary>
     public static Plugin? Instance { get; private set; }
+
+    /// <summary>
+    /// Gets the application paths.
+    /// </summary>
+    public new IApplicationPaths ApplicationPaths { get; private set; }
 
     /// <summary>
     /// Gets the database context.

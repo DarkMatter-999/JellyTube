@@ -8,6 +8,8 @@
     <Nullable>enable</Nullable>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <CodeAnalysisRuleSet>../jellyfin.ruleset</CodeAnalysisRuleSet>
+    <SelfContained>false</SelfContained>
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,7 +20,9 @@
     <PackageReference Include="Jellyfin.Model" Version="10.9.11">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.7">
+      <ExcludeAssets>native</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

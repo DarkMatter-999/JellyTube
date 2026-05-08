@@ -50,4 +50,14 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the preferred video format for yt-dlp.
     /// </summary>
     public string VideoFormat { get; set; }
+
+    /// <summary>
+    /// Gets or sets the library path where .strm and .nfo files are written.
+    /// </summary>
+    public string LibraryPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the Jellyfin server URL used when generating stream URLs.
+    /// </summary>
+    public string ServerUrl { get; set; } = "http://localhost:8096";
 }

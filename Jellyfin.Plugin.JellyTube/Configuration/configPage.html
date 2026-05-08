@@ -27,6 +27,18 @@
                         <div class="fieldDescription">yt-dlp format string (e.g. bestvideo[height<=1080]+bestaudio/best for 1080p, or bestvideo+bestaudio/best for 4K).</div>
                     </div>
 
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="LibraryPath">Library Path</label>
+                        <input id="LibraryPath" name="LibraryPath" type="text" is="emby-input" />
+                        <div class="fieldDescription">Directory where .strm and .nfo files are written. Leave empty for default ({DataPath}/youtube-library).</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ServerUrl">Server URL</label>
+                        <input id="ServerUrl" name="ServerUrl" type="text" is="emby-input" />
+                        <div class="fieldDescription">Jellyfin server URL used in stream URLs (e.g. http://localhost:8096).</div>
+                    </div>
+
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Save</span>
@@ -47,6 +59,8 @@
                         document.querySelector('#YtDlpPath').value = config.YtDlpPath || 'yt-dlp';
                         document.querySelector('#SourceUrls').value = (config.SourceUrls || []).join('\n');
                         document.querySelector('#VideoFormat').value = config.VideoFormat || 'bres:1080,ext:mp4:m4a';
+                        document.querySelector('#LibraryPath').value = config.LibraryPath || '';
+                        document.querySelector('#ServerUrl').value = config.ServerUrl || 'http://localhost:8096';
                         Dashboard.hideLoadingMsg();
                     });
                 });
@@ -57,6 +71,8 @@
                 ApiClient.getPluginConfiguration(JellyTubeConfig.pluginUniqueId).then(function (config) {
                     config.YtDlpPath = document.querySelector('#YtDlpPath').value;
                     config.VideoFormat = document.querySelector('#VideoFormat').value;
+                    config.LibraryPath = document.querySelector('#LibraryPath').value;
+                    config.ServerUrl = document.querySelector('#ServerUrl').value;
                     var urlsRaw = document.querySelector('#SourceUrls').value;
                     config.SourceUrls = urlsRaw.split('\n').map(u => u.trim()).filter(u => u.length > 0);
 
