@@ -44,6 +44,13 @@
                             <span>Save</span>
                         </button>
                     </div>
+
+                    <div style="margin-top: 1em;">
+                        <button is="emby-button" type="button" id="btnClearCache" class="raised button-delete block emby-button">
+                            <span>Clear Stream Cache</span>
+                        </button>
+                        <div class="fieldDescription">Delete all cached stream URLs so they are re-fetched on next playback.</div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -84,6 +91,21 @@
                 e.preventDefault();
                 return false;
             });
+
+            document.querySelector('#btnClearCache')
+                .addEventListener('click', function(e) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.ajax({
+                        type: 'DELETE',
+                        url: ApiClient.getUrl('YouTube/Cache')
+                    }).then(function() {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert({ message: 'Stream cache cleared.', title: 'JellyTube' });
+                    }).catch(function(err) {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert({ message: 'Failed to clear cache: ' + (err.message || err), title: 'Error' });
+                    });
+                });
         </script>
     </div>
 </body>

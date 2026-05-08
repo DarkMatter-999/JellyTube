@@ -108,9 +108,8 @@ public class StreamController : ControllerBase
 
         var formatsToTry = new[]
         {
-            "best[height<=1080]/bestvideo[height<=1080]+bestaudio/best",
             config.VideoFormat,
-            "bestvideo+bestaudio/best",
+            "bestvideo[height<=1080]+bestaudio/bestvideo+bestaudio/best[height<=1080]/best",
             "best"
         };
 
@@ -190,6 +189,27 @@ public class StreamController : ControllerBase
 
         HttpContext.Response.RegisterForDispose(process);
         return File(process.StandardOutput.BaseStream, "video/x-matroska");
+    }
+
+    /// <summary>
+    /// Clears the cached stream URLs for all videos.
+    /// </summary>
+    /// <returns>OK response on success.</returns>
+    [HttpDelete("Cache")]
+    public async Task<ActionResult> ClearCache()
+    {
+        var db = Plugin.Instance?.DbContext;
+        if (db == null)
+        {
+            return StatusCode(503, "Plugin not initialized");
+        }
+
+        using var connection = db.GetConnection();
+        await connection.OpenAsync().ConfigureAwait(false);
+        await connection.ExecuteAsync("DELETE FROM DMJT_StreamCache").ConfigureAwait(false);
+
+        _logger.LogInformation("Stream URL cache cleared");
+        return Ok("Cache cleared");
     }
 
     private static bool IsValidYouTubeVideoId(string videoId)

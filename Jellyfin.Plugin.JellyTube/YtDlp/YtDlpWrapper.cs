@@ -187,7 +187,7 @@ public class YtDlpWrapper
             try
             {
                 var item = JsonSerializer.Deserialize<YtDlpVideoItem>(line);
-                if (item == null || string.IsNullOrEmpty(item.Id) || item.Type != "url")
+                if (item == null || string.IsNullOrEmpty(item.Id) || item.Type == "playlist")
                 {
                     continue;
                 }
@@ -227,12 +227,6 @@ public class YtDlpWrapper
     /// A list of stream URLs suitable for playback. Typically contains one or more URLs depending on the format requested.
     /// </returns>
     /// <remarks>
-    /// This method uses several optimizations to speed up execution:
-    /// - --no-check-certificates: Skips SSL verification (safe for CDN URLs from yt-dlp)
-    /// - --extractor-args skip=hls,dash: Avoids enumerating HLS/DASH manifests (~50% faster)
-    /// - --no-playlist: Ensures only the single video is targeted, not any associated playlist
-    /// - --js-runtimes node: Uses Node.js for JavaScript evaluation if needed
-    ///
     /// The returned URLs can be directly used for video playback. Multiple URLs may be returned
     /// if the format specifies alternatives or if HLS/DASH manifests are included.
     /// </remarks>
@@ -243,11 +237,11 @@ public class YtDlpWrapper
 
         // Speed optimizations:
         // --no-check-certificates  : skips SSL verification (safe for CDN URLs)
-        // --extractor-args skip=hls,dash : avoids enumerating HLS/DASH manifests, ~50% faster
+        // --extractor-args skip=hls,dash : avoids enumerating HLS/DASH manifests faster
         // --no-playlist            : ensures we only target the single video
         var args = $"-f \"{formatArg}\" -g "
                  + "--no-check-certificates "
-                 + "--extractor-args \"youtube:skip=hls,dash\" "
+                 + "--extractor-args \"youtube:skip=hls\" "
                  + "--js-runtimes node "
                  + "--no-playlist "
                  + $"\"{url}\"";
