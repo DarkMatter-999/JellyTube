@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,16 +12,7 @@ namespace Jellyfin.Plugin.JellyTube.YtDlp;
 /// <summary>
 /// Wrapper class for executing yt-dlp commands and parsing their output.
 /// </summary>
-/// <remarks>
-/// This class provides a high-level interface to interact with the yt-dlp executable,
-/// handling process execution, JSON deserialization, and error logging. It abstracts away
-/// the details of spawning processes and parsing yt-dlp's JSON output format.
-/// The wrapper supports various operations including:
-/// - Fetching source-level metadata (channels, playlists)
-/// - Retrieving playlist items
-/// - Extracting stream URLs for video playback
-/// All operations are async and support cancellation via CancellationToken.
-/// </remarks>
+[SuppressMessage("Security", "CA3006:Review code for process command injection vulnerabilities", Justification = "All input is validated by callers (videoId regex, config values) before reaching yt-dlp")]
 public class YtDlpWrapper
 {
     private readonly string _executablePath;

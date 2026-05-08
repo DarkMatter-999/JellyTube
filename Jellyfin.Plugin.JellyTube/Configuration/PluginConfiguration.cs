@@ -31,7 +31,7 @@ public class PluginConfiguration : BasePluginConfiguration
     public PluginConfiguration()
     {
         YtDlpPath = "yt-dlp";
-        VideoFormat = "res:1080,ext:mp4:m4a";
+        VideoFormat = "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best";
         SourceUrls = new Collection<string>();
     }
 

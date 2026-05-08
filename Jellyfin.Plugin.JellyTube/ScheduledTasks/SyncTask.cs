@@ -65,13 +65,13 @@ public class SyncTask : IScheduledTask
             // --- Fetch full source metadata (title, description, thumbnail) ---
             var sourceInfo = await wrapper.GetSourceMetadataAsync(url, cancellationToken).ConfigureAwait(false);
 
-            // --- Fetch playlist items ---
+            // Fetch playlist items
             var (items, flatSourceInfo) = await wrapper.GetPlaylistItemsAsync(url, cancellationToken).ConfigureAwait(false);
 
             // Use detailed source info if available, otherwise fallback to flat-playlist data
             sourceInfo ??= flatSourceInfo;
 
-            // --- Upsert Source ---
+            // Upsert Source
             var existingSource = await connection.QueryFirstOrDefaultAsync<Data.Models.Source>(
                 "SELECT * FROM DMJT_Sources WHERE Url = @Url", new { Url = url }).ConfigureAwait(false);
 
@@ -82,8 +82,8 @@ public class SyncTask : IScheduledTask
             if (existingSource == null)
             {
                 await connection.ExecuteAsync(
-                    @"INSERT INTO DMJT_Sources (Id, Url, Type, Title, Uploader, Description, ThumbnailUrl, ChannelId, LastSyncedAt)
-                      VALUES (@Id, @Url, @Type, @Title, @Uploader, @Description, @ThumbnailUrl, @ChannelId, @LastSyncedAt)",
+                    @"INSERT INTO DMJT_Sources (Id, Url, Type, Title, Uploader, Description, ThumbnailUrl, ChannelId, LibraryId, LastSyncedAt)
+                      VALUES (@Id, @Url, @Type, @Title, @Uploader, @Description, @ThumbnailUrl, @ChannelId, @LibraryId, @LastSyncedAt)",
                     new
                     {
                         Id = sourceId,
@@ -94,6 +94,7 @@ public class SyncTask : IScheduledTask
                         Description = sourceInfo?.Description ?? string.Empty,
                         ThumbnailUrl = sourceThumbnail,
                         ChannelId = sourceInfo?.ChannelId ?? string.Empty,
+                        LibraryId = string.Empty,
                         LastSyncedAt = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)
                     }).ConfigureAwait(false);
             }
@@ -102,7 +103,7 @@ public class SyncTask : IScheduledTask
                 // Update source metadata on every sync
                 await connection.ExecuteAsync(
                     @"UPDATE DMJT_Sources SET Title=@Title, Uploader=@Uploader, ThumbnailUrl=@ThumbnailUrl,
-                      ChannelId=@ChannelId, LastSyncedAt=@LastSyncedAt WHERE Id=@Id",
+                      ChannelId=@ChannelId, LibraryId=@LibraryId, LastSyncedAt=@LastSyncedAt WHERE Id=@Id",
                     new
                     {
                         Id = sourceId,
@@ -110,11 +111,12 @@ public class SyncTask : IScheduledTask
                         Uploader = sourceInfo?.Uploader ?? existingSource.Uploader,
                         ThumbnailUrl = !string.IsNullOrEmpty(sourceThumbnail) ? sourceThumbnail : existingSource.ThumbnailUrl,
                         ChannelId = sourceInfo?.ChannelId ?? existingSource.ChannelId,
+                        LibraryId = existingSource.LibraryId ?? string.Empty,
                         LastSyncedAt = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)
                     }).ConfigureAwait(false);
             }
 
-            // --- Prepare library folder ---
+            // Prepare library folder
             var libraryPath = config.LibraryPath;
             if (string.IsNullOrEmpty(libraryPath))
             {
@@ -138,7 +140,7 @@ public class SyncTask : IScheduledTask
                 Directory.CreateDirectory(sourceDir);
             }
 
-            // --- Write tvshow.nfo for the source folder ---
+            // Write tvshow.nfo for the source folder
             if (sourceDir != null)
             {
                 var tvshowNfoPath = Path.Combine(sourceDir, "tvshow.nfo");
@@ -156,7 +158,7 @@ public class SyncTask : IScheduledTask
                 }
             }
 
-            // --- Process individual videos ---
+            // Process individual videos
             foreach (var item in items)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -186,7 +188,7 @@ public class SyncTask : IScheduledTask
                         }).ConfigureAwait(false);
                 }
 
-                // --- Generate .strm and .nfo files ---
+                // Generate .strm and .nfo files
                 if (sourceDir != null)
                 {
                     var safeVideoTitle = MakeSafeFileName(item.Title ?? item.Id);

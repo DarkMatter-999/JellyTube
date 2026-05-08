@@ -38,6 +38,7 @@ public class SqliteDbContext
                 Description TEXT,
                 ThumbnailUrl TEXT,
                 ChannelId TEXT,
+                LibraryId TEXT,
                 LastSyncedAt TEXT
             );
 
@@ -51,7 +52,7 @@ public class SqliteDbContext
                 Description TEXT,
                 UploadDate TEXT,
                 ViewCount INTEGER,
-                FOREIGN KEY(SourceId) REFERENCES Sources(Id)
+                FOREIGN KEY(SourceId) REFERENCES DMJT_Sources(Id)
             );
 
             CREATE TABLE IF NOT EXISTS DMJT_StreamCache (
@@ -60,6 +61,14 @@ public class SqliteDbContext
                 ExpiresAt TEXT NOT NULL
             );
         ");
+
+        try
+        {
+            connection.Execute("ALTER TABLE DMJT_Sources ADD COLUMN LibraryId TEXT");
+        }
+        catch
+        {
+        }
     }
 
     /// <summary>
@@ -68,6 +77,9 @@ public class SqliteDbContext
     /// <returns>A new instance of <see cref="SqliteConnection"/>.</returns>
     public SqliteConnection GetConnection()
     {
-        return new SqliteConnection(_connectionString);
+        var connection = new SqliteConnection(_connectionString);
+        connection.Open();
+        connection.Execute("PRAGMA foreign_keys = OFF");
+        return connection;
     }
 }

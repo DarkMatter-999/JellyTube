@@ -48,6 +48,11 @@ public class Source
     public string ChannelId { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the Jellyfin library ID associated with this source.
+    /// </summary>
+    public string LibraryId { get; set; } = string.Empty;
+
+    /// <summary>
     /// Gets or sets the date and time when the source was last synced.
     /// </summary>
     public DateTime LastSyncedAt { get; set; } = DateTime.MinValue;

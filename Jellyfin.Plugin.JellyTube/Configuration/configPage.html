@@ -58,7 +58,7 @@
                     ApiClient.getPluginConfiguration(JellyTubeConfig.pluginUniqueId).then(function (config) {
                         document.querySelector('#YtDlpPath').value = config.YtDlpPath || 'yt-dlp';
                         document.querySelector('#SourceUrls').value = (config.SourceUrls || []).join('\n');
-                        document.querySelector('#VideoFormat').value = config.VideoFormat || 'bres:1080,ext:mp4:m4a';
+                        document.querySelector('#VideoFormat').value = config.VideoFormat || 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best';
                         document.querySelector('#LibraryPath').value = config.LibraryPath || '';
                         document.querySelector('#ServerUrl').value = config.ServerUrl || 'http://localhost:8096';
                         Dashboard.hideLoadingMsg();
