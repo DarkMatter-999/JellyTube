@@ -18,8 +18,11 @@ namespace Jellyfin.Plugin.JellyTube.Api;
 /// </summary>
 [ApiController]
 [Route("YouTube")]
+[SuppressMessage("Security", "CA3006:Review code for process command injection vulnerabilities", Justification = "videoId is validated by IsValidYouTubeVideoId regex before use")]
 public class StreamController : ControllerBase
 {
+    private const long BytesPerSecond = 625_000;
+
     private readonly ILogger<StreamController> _logger;
 
     private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(12);
@@ -74,7 +77,72 @@ public class StreamController : ControllerBase
         }
 
         _logger.LogInformation("Merging split streams for {VideoId} via ffmpeg (c:copy -> Matroska)", videoId);
-        return PipeMergedStream(streamUrls[0], streamUrls[1]);
+
+        var durationSeconds = await GetVideoDurationAsync(videoId, db).ConfigureAwait(false);
+        var rangeHeader = (string?)Request.Headers["Range"];
+        var rangeStart = ParseRangeStart(rangeHeader);
+
+        double startTime = 0;
+        if (rangeStart.HasValue && durationSeconds > 0)
+        {
+            startTime = EstimateSeekTime(rangeStart.Value, durationSeconds);
+            _logger.LogDebug(
+                "Range request: bytes={RangeStart}, duration={Duration}s, seekTime={SeekTime}s",
+                rangeStart.Value,
+                durationSeconds,
+                startTime);
+        }
+
+        return PipeMergedStream(streamUrls[0], streamUrls[1], startTime, durationSeconds);
+    }
+
+    private async Task<double> GetVideoDurationAsync(string videoId, Data.SqliteDbContext db)
+    {
+        try
+        {
+            using var connection = db.GetConnection();
+            var duration = await connection.QueryFirstOrDefaultAsync<int>(
+                "SELECT Duration FROM DMJT_Videos WHERE Id = @Id", new { Id = videoId }).ConfigureAwait(false);
+            return duration > 0 ? duration : 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get video duration for {VideoId}", videoId);
+            return 0;
+        }
+    }
+
+    private static long? ParseRangeStart(string? rangeHeader)
+    {
+        if (string.IsNullOrEmpty(rangeHeader))
+        {
+            return null;
+        }
+
+        var match = Regex.Match(rangeHeader, @"^bytes=(\d+)-");
+        if (match.Success && long.TryParse(match.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var start))
+        {
+            return start;
+        }
+
+        return null;
+    }
+
+    private static double EstimateSeekTime(long rangeStart, double durationSeconds)
+    {
+        if (durationSeconds <= 0 || rangeStart <= 0)
+        {
+            return 0;
+        }
+
+        var totalBytes = (long)(durationSeconds * BytesPerSecond);
+        if (totalBytes <= 0)
+        {
+            return 0;
+        }
+
+        var ratio = (double)rangeStart / totalBytes;
+        return Math.Max(0, Math.Min(ratio * durationSeconds, durationSeconds - 2));
     }
 
     private async Task<List<string>?> GetCachedOrFetchUrlsAsync(
@@ -150,7 +218,7 @@ public class StreamController : ControllerBase
         return urls;
     }
 
-    private FileStreamResult PipeMergedStream(string videoUrl, string audioUrl)
+    private FileStreamResult PipeMergedStream(string videoUrl, string audioUrl, double startTimeSeconds = 0, double totalDurationSeconds = 0)
     {
         var ffmpegPath = "/usr/lib/jellyfin-ffmpeg/ffmpeg";
         if (!System.IO.File.Exists(ffmpegPath))
@@ -158,11 +226,36 @@ public class StreamController : ControllerBase
             ffmpegPath = "ffmpeg";
         }
 
-        var args = $"-y -i \"{videoUrl}\" -i \"{audioUrl}\" "
-                 + "-map 0:v:0 -map 1:a:0 "
-                 + "-c copy "
-                 + "-fflags +genpts "
-                 + "-f matroska pipe:1";
+        var args = string.Empty;
+
+        if (startTimeSeconds > 0)
+        {
+            args += $"-ss {startTimeSeconds} ";
+        }
+
+        args += $"-i \"{videoUrl}\" ";
+
+        if (startTimeSeconds > 0)
+        {
+            args += $"-ss {startTimeSeconds} ";
+        }
+
+        args += $"-i \"{audioUrl}\" ";
+
+        // Always tell ffmpeg the expected output duration.
+        // This makes the Matroska muxer write the correct Duration in the header,
+        // so the player knows the stream length and shows a seek bar.
+        // The +2s buffer avoids truncation from timestamp rounding differences.
+        if (totalDurationSeconds > 0)
+        {
+            var remaining = (totalDurationSeconds - startTimeSeconds) + 2;
+            args += $"-t {remaining} ";
+        }
+
+        args += "-map 0:v:0 -map 1:a:0 "
+              + "-c copy "
+              + "-fflags +genpts "
+              + "-f matroska pipe:1";
 
         var processStartInfo = new ProcessStartInfo
         {
@@ -186,6 +279,13 @@ public class StreamController : ControllerBase
 
         process.Start();
         process.BeginErrorReadLine();
+
+        HttpContext.Response.Headers["Accept-Ranges"] = "bytes";
+
+        if (startTimeSeconds > 0)
+        {
+            HttpContext.Response.StatusCode = 206;
+        }
 
         HttpContext.Response.RegisterForDispose(process);
         return File(process.StandardOutput.BaseStream, "video/x-matroska");
